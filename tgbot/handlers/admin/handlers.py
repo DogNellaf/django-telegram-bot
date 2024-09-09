@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 
 from django.utils.timezone import now
+from django.db.transaction import commit
 from telegram import ParseMode, Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
 from asgiref.sync import sync_to_async
@@ -43,26 +44,24 @@ COMPANIES = ['Folk', 'Amber', 'Padron', 'ENO']
 
 SELECT_COMPANY, ENTER_NAME = range(2)  # Определяем состояния
 
-@sync_to_async
 def save_user_company(user_id, company):
-    user_with_id_exists = User.objects.filter(telegram_id=user_id).exists()
+    user_with_id_exists = User.objects.filter(user_id=user_id).exists()
     if user_with_id_exists:
-        user_profile = User.objects.get(telegram_id=user_id)
+        user_profile = User.objects.get(user_id=user_id)
         user_profile.company = "1" #company
         user_profile.save()
     else:
         guest_role = Role.objects.get(name="Гость")
-        user = User(
-            telegram_id = user_id,
+        user = User.objects.create(
+            user_id = user_id,
             username = "",
+            first_name = "",
             company = company,
             role = guest_role
         )
-        user.save()
 
-@sync_to_async
 def save_user_name(user_id, name):
-    user_profile = User.objects.get(telegram_id=user_id)
+    user_profile = User.objects.get(user_id=user_id)
     user_profile.username = name
     user_profile.save()
 
