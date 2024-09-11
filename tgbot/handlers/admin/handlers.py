@@ -63,7 +63,6 @@ def save_user_company(user_id, company_name) -> bool:
         User.objects.create(
             user_id = user_id,
             username = "",
-            first_name = "",
             company = company,
             role = guest_role
         )
