@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 
 from django.utils.timezone import now
 from django.db.transaction import commit
@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 from tgbot.handlers.admin import static_text
 from tgbot.handlers.admin.utils import _get_csv_from_qs_values
 from tgbot.handlers.utils.decorators import admin_only, send_typing_action
-from users.models import User, Role, Event
+from users.models import User, Role, Company
 
 
 @admin_only
@@ -44,21 +44,30 @@ COMPANIES = ['Folk', 'Amber', 'Padron', 'ENO']
 
 SELECT_COMPANY, ENTER_NAME = range(2)  # Определяем состояния
 
-def save_user_company(user_id, company):
+def save_user_company(user_id, company_name) -> bool:
     user_with_id_exists = User.objects.filter(user_id=user_id).exists()
+    company_with_name_exists = Company.objects.filter(name=company_name).exists()
+
+    if not company_with_name_exists:
+        print(f"Компания {company_name} не найдена")
+        return False
+
+    company = Company.objects.get(name=company_name)
     if user_with_id_exists:
         user_profile = User.objects.get(user_id=user_id)
-        user_profile.company = "1" #company
+        user_profile.company = company
         user_profile.save()
+        return True
     else:
         guest_role = Role.objects.get(name="Гость")
-        user = User.objects.create(
+        User.objects.create(
             user_id = user_id,
             username = "",
             first_name = "",
             company = company,
             role = guest_role
         )
+        return True
 
 def save_user_name(user_id, name):
     user_profile = User.objects.get(user_id=user_id)
@@ -66,7 +75,7 @@ def save_user_name(user_id, name):
     user_profile.save()
 
 def start(update: Update, context: CallbackContext) -> None:
-    keyboard = [[company] for company in COMPANIES]
+    keyboard = [[company] for company in Company.objects.all()]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
     update.message.reply_text('Выберите компанию:', reply_markup=reply_markup)
 
@@ -77,7 +86,11 @@ def select_company(update: Update, context: CallbackContext) -> None:
         user = update.message.from_user
         company = update.message.text
 
-        save_user_company(user.id, company)
+        does_user_save = save_user_company(user.id, company)
+        if not does_user_save:
+            update.message.reply_text('Возникла ошибка - компания не найдена. Обратитесь к администратору')
+            return
+
         update.message.reply_text(f'Вы выбрали {company}. Теперь введите свое имя:')
 
         context.user_data['state'] = ENTER_NAME  # Переходим к следующему состоянию
@@ -91,15 +104,6 @@ def get_name(update: Update, context: CallbackContext) -> None:
         update.message.reply_text(f'Спасибо, {name}. Мы будем уведомлять вас о событиях.')
 
         context.user_data['state'] = None  # Сбрасываем состояние после завершения
-
-def send_reminders(update: Update, context: CallbackContext):
-    today = datetime.now().date()
-    events = sync_to_async(Event.objects.filter(date=today).all)()
-
-    for event in events:
-        users = sync_to_async(User.objects.filter(company=event.company).all)()
-        for user in users:
-            update.message.send_message(user.telegram_id, f"Напоминание: Сегодня запланировано событие:\n'{event.text}'.")
 
 def handle_message(update: Update, context: CallbackContext) -> None:
     if context.user_data.get('state') == SELECT_COMPANY:

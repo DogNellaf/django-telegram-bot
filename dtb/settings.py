@@ -170,6 +170,11 @@ if TELEGRAM_TOKEN is None:
 
 TELEGRAM_LOGS_CHAT_ID = os.getenv("TELEGRAM_LOGS_CHAT_ID", default=None)
 
+ALARM_STICKERS = [
+    'CAACAgIAAxkBAAEMyx1m4cx6e2O-Zgz_eMSj4IzIMfg9nQACEUEAAtwCgUtT9zHXW5eW0DYE',
+    'CAACAgIAAxkBAAEMyx9m4cyH8xS176jYVA4FRcEu-hcKDwAC2kMAAuBegEtobKdIhkegszYE'
+]
+
 # -----> SENTRY
 # import sentry_sdk
 # from sentry_sdk.integrations.django import DjangoIntegration
@@ -189,3 +194,4 @@ TELEGRAM_LOGS_CHAT_ID = os.getenv("TELEGRAM_LOGS_CHAT_ID", default=None)
 #     # django.contrib.auth) you may enable sending PII data.
 #     send_default_pii=True
 # )
+

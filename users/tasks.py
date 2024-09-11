@@ -4,25 +4,32 @@
 
 import time
 from typing import Union, List, Optional, Dict
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from random import choice
 
 import telegram
 
 from dtb.celery import app
+from dtb.settings import ALARM_STICKERS
 from celery.utils.log import get_task_logger
 from celery import shared_task
-from tgbot.handlers.broadcast_message.utils import send_one_message, from_celery_entities_to_entities, \
+from tgbot.handlers.broadcast_message.utils import (
+    send_one_message, 
+    send_one_sticker, 
+    from_celery_entities_to_entities,
     from_celery_markup_to_markup
+)
 
 from users.models import User, Event
 
 logger = get_task_logger(__name__)
 
+def get_random_sticker_id() -> str:
+    return choice(ALARM_STICKERS)
 
-@shared_task
-def send_daily_reminders():
-    today = datetime.today()
-    events = Event.objects.filter(date=today).all()
+
+def send_reminders(date: date, reminder_title: str = ""):
+    events = Event.objects.filter(date=date).all()
 
     for event in events:
         users = User.objects.filter(company=event.company).all()
@@ -30,11 +37,30 @@ def send_daily_reminders():
         for user in users:
             send_one_message(
                 user_id=user.user_id,
-                text=f"Напоминание: Сегодня запланировано событие:\n'{event.text}'."
+                text=f"{reminder_title}:\n'{event.text}'."
             )
+
+            send_one_sticker(
+                user_id=user.user_id,
+                sticker_id=get_random_sticker_id()
+            )
+
             logger.info(f"Уведомление отправлено пользователю {user.user_id}")
 
-    print(f"Уведомления за {today} отправлены")
+    print(f"Уведомления за {date} отправлены")
+
+@shared_task
+def send_daily_reminders():
+    '''Посылает уведомление о мероприятиях текущего дня'''
+    today = datetime.today()
+    send_reminders(date=today, reminder_title="Напоминание! Сегодня запланировано событие")
+
+@shared_task
+def send_tomorrow_reminders():
+    '''Посылает уведомление о мероприятиях завтрашнего дня'''
+    tomorrow = datetime.today() + timedelta(days=1)
+    send_reminders(date=tomorrow, reminder_title="Напоминание! Завтра запланировано событие")
+
 
 @app.task(ignore_result=True)
 def broadcast_message(

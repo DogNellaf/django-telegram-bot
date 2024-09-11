@@ -71,3 +71,27 @@ def send_one_message(
         success = True
         User.objects.filter(user_id=user_id).update(is_blocked_bot=False)
     return success
+
+def send_one_sticker(
+    user_id: Union[str, int],
+    sticker_id: str,
+    reply_markup: Optional[List[List[Dict]]] = None,
+    reply_to_message_id: Optional[int] = None,
+    tg_token: str = TELEGRAM_TOKEN,
+) -> bool:
+    bot = telegram.Bot(tg_token)
+    try:
+        m = bot.send_sticker(
+            chat_id=user_id,
+            sticker=sticker_id,
+            reply_markup=reply_markup,
+            reply_to_message_id=reply_to_message_id
+        )
+    except telegram.error.Unauthorized:
+        print(f"Can't send message to {user_id}. Reason: Bot was stopped.")
+        User.objects.filter(user_id=user_id).update(is_blocked_bot=True)
+        success = False
+    else:
+        success = True
+        User.objects.filter(user_id=user_id).update(is_blocked_bot=False)
+    return success
