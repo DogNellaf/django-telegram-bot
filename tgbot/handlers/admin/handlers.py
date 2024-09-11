@@ -75,7 +75,7 @@ def save_user_name(user_id, name):
     user_profile.save()
 
 def start(update: Update, context: CallbackContext) -> None:
-    keyboard = [[company] for company in list(Company.objects.all())]
+    keyboard = [[company.name] for company in list(Company.objects.all())]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
     update.message.reply_text('Выберите компанию:', reply_markup=reply_markup)
 
