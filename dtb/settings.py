@@ -101,11 +101,11 @@ ASGI_APPLICATION = 'dtb.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
+        'NAME': 'tgbot',
         'USER': 'postgres',
         'PASSWORD': 'IMXkS_jbspm02wM',
         'HOST': '188.120.227.81',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 
