@@ -32,7 +32,7 @@ def send_reminders(date: date, reminder_title: str = ""):
     events = Event.objects.filter(date=date).all()
 
     for event in events:
-        roles = [role for role in event.roles]
+        roles = event.roles.all()
         users = User.objects.filter(company=event.company, role__in=roles).all()
 
         for user in users:
